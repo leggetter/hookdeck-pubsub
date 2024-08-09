@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import pkg from "../package.json";
 import { APIResponse, Fetcher } from "@hookdeck/sdk/core/fetcher";
 import {

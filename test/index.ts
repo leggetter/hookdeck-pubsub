@@ -41,12 +41,12 @@ describe("HookdeckPubSub class", () => {
 
   it("should create an instance using its constructor with just apiKey", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY });
-    expect(pubsub, "pubusub should exist").to.exist;
+    expect(pubsub).to.exist("pubusub should exist");
   });
 
   it("should create an instance using its constructor with publishAuth", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
-    expect(pubsub, "pubusub should exist").to.exist;
+    expect(pubsub).to.exist("pubusub should exist");
   });
 
   it("should return a Channel object when calling channel()", async () => {
@@ -54,7 +54,7 @@ describe("HookdeckPubSub class", () => {
     const channel = await pubsub.channel({
       name: "test-channel-calling-channel",
     });
-    expect(channel, "channel should exist").to.exist;
+    expect(channel).to.exist("channel should exist");
   });
 
   it("should throw an error if a channel doesn't exist and no publishAuth is set", async () => {
@@ -77,7 +77,7 @@ describe("HookdeckPubSub class", () => {
       url: "http://localhost:3000",
     });
 
-    expect(subscription, "subscription should exist").to.exist;
+    expect(subscription).to.exist("subscription should exist");
   });
 
   it("should set a channelName on the Subscription object when calling subscribe()", async () => {
@@ -110,10 +110,9 @@ describe("HookdeckPubSub class", () => {
       url: "http://localhost:3000",
     });
 
-    expect(
-      subscription.connection.source?.verification,
+    expect(subscription.connection.source?.verification).to.be.undefined(
       "subscription.connection.source.verification should exist"
-    ).to.be.undefined;
+    );
   });
 
   it("should get a subscription when calling getSubscriptions()", async () => {
@@ -255,6 +254,6 @@ describe("HookdeckPubSub class", () => {
       data: { some: "event.data" },
     });
 
-    expect(response.ok).to.be.true;
+    expect(response.ok).to.be.true("response.ok should be true");
   });
 });

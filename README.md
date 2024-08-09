@@ -77,7 +77,7 @@ This section is here as a reminder for you to explain to your users how to contr
 
 ## Credits
 
-- [Chris Wells Node TypeScript Template](https://github.com/leggetter/hookdeck-pubsub)
+- [Chris Wells Node TypeScript Template](https://github.com/chriswells0/node-typescript-template)
 
 [connection-docs]: https://hookdeck.com/docs/connections?ref=github-hookdeck-pubsub
 [rules-docs]: https://hookdeck.com/docs/connections#connection-rules?ref=github-hookdeck-pubsub

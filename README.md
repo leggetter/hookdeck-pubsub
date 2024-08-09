@@ -18,8 +18,8 @@ _<sup>†</sup> The current plan is only to support Filter rules._
 
 ## Contents
 
-- [Usage][#usage]
-- [Todos][#todos]
+- [Usage](#usage)
+- [Todos](#todos)
 - [Contributing](#contributing)
 
 ## Usage

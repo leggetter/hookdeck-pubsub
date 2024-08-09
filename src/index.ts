@@ -50,6 +50,16 @@ export interface GetChannelRequest {
 }
 
 /**
+ * The request object for getting a subscriptions.
+ */
+export interface GetSubscriptionsRequest {
+  /**
+   * The subscription name to be matched
+   */
+  name: string;
+}
+
+/**
  * An event to be published on a {Channel}
  */
 export interface PublishEvent {
@@ -244,7 +254,7 @@ export class HookdeckPubSub {
   }: SubscriptionRequest): Promise<Subscription> {
     this._logger.debug("Subscribing: " + JSON.stringify({ channelName, url }));
 
-    const b64Url = btoa(url);
+    const b64Url = btoa(url).replace(/=/g, "_");
 
     const request: ConnectionUpsertRequest = {
       name: `conn_${channelName}_${b64Url}`,
@@ -278,8 +288,12 @@ export class HookdeckPubSub {
    *
    * @returns {Subscription[]} The list of subscriptions.
    */
-  public async getSubscriptions(): Promise<Subscription[]> {
-    const connections = await this._sdk.connection.list();
+  public async getSubscriptions(
+    params?: GetSubscriptionsRequest
+  ): Promise<Subscription[]> {
+    const connections = await this._sdk.connection.list({
+      fullName: params?.name,
+    });
     const subscriptions: Subscription[] = [];
 
     if (connections.models) {

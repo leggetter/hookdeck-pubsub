@@ -41,12 +41,12 @@ describe("HookdeckPubSub class", () => {
 
   it("should create an instance using its constructor with just apiKey", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY });
-    expect(pubsub).to.exist("pubusub should exist");
+    expect(pubsub).to.not.equal(undefined);
   });
 
   it("should create an instance using its constructor with publishAuth", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
-    expect(pubsub).to.exist("pubusub should exist");
+    expect(pubsub).to.not.equal(undefined);
   });
 
   it("should return a Channel object when calling channel()", async () => {
@@ -54,7 +54,7 @@ describe("HookdeckPubSub class", () => {
     const channel = await pubsub.channel({
       name: "test-channel-calling-channel",
     });
-    expect(channel).to.exist("channel should exist");
+    expect(channel).to.not.equal(undefined);
   });
 
   it("should throw an error if a channel doesn't exist and no publishAuth is set", async () => {
@@ -77,12 +77,12 @@ describe("HookdeckPubSub class", () => {
       url: "http://localhost:3000",
     });
 
-    expect(subscription).to.exist("subscription should exist");
+    expect(subscription).to.not.equal(undefined);
   });
 
   it("should set a channelName on the Subscription object when calling subscribe()", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
-    const CHANNEL_NAME = "test-channel-name-calling-subscribe";
+    const CHANNEL_NAME = "test-channel-name-calling-subscribe-assert-name";
     const subscription = await pubsub.subscribe({
       channelName: CHANNEL_NAME,
       url: "http://localhost:3000",
@@ -93,7 +93,7 @@ describe("HookdeckPubSub class", () => {
 
   it("should set a url on the Subscription object when calling subscribe()", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
-    const CHANNEL_NAME = "test-channel-name-calling-subscribe";
+    const CHANNEL_NAME = "test-channel-name-calling-subscribe-assert-url";
     const URL = "http://localhost:3000";
     const subscription = await pubsub.subscribe({
       channelName: CHANNEL_NAME,
@@ -110,9 +110,7 @@ describe("HookdeckPubSub class", () => {
       url: "http://localhost:3000",
     });
 
-    expect(subscription.connection.source?.verification).to.be.undefined(
-      "subscription.connection.source.verification should exist"
-    );
+    expect(subscription.connection.source?.verification).to.equal(undefined);
   });
 
   it("should get a subscription when calling getSubscriptions()", async () => {
@@ -139,6 +137,24 @@ describe("HookdeckPubSub class", () => {
     });
 
     const subscriptions = await pubsub.getSubscriptions();
+
+    expect(subscriptions.length).to.be.equal(2);
+  });
+
+  it("should perform partial name match when calling getSubscriptions()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    await pubsub.subscribe({
+      channelName: "test-channel-getting-subscriptions-partial-match-1",
+      url: "http://localhost:3000",
+    });
+    await pubsub.subscribe({
+      channelName: "test-channel-getting-subscriptions-partial-match-2",
+      url: "http://localhost:3000",
+    });
+
+    const subscriptions = await pubsub.getSubscriptions({
+      name: "test-channel-getting-subscriptions-partial-match",
+    });
 
     expect(subscriptions.length).to.be.equal(2);
   });
@@ -254,6 +270,6 @@ describe("HookdeckPubSub class", () => {
       data: { some: "event.data" },
     });
 
-    expect(response.ok).to.be.true("response.ok should be true");
+    expect(response.ok).to.be.equal(true);
   });
 });

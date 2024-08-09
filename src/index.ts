@@ -3,11 +3,13 @@ import { ConnectionUpsertRequest } from "@hookdeck/sdk/api";
 import { Logger } from "sitka";
 // import { CustomFetcher } from "./custom-fetcher";
 
+export type SubscriberAuth = Hookdeck.DestinationAuthMethodConfig;
+
 export interface SubscriptionRequest {
   /**
    * The name of the channe to subscribe to
    */
-  name: string;
+  channelName: string;
 
   /**
    * The URL to be invoked when an event is published to the topic.
@@ -17,7 +19,7 @@ export interface SubscriptionRequest {
   /**
    * How requests to the {#url} are authenticated.
    */
-  auth?: Hookdeck.DestinationAuthMethodConfig;
+  auth?: SubscriberAuth;
 }
 
 export type PublishAuth =
@@ -78,9 +80,14 @@ export interface Channel {
 
 export interface Subscription {
   /**
+   * The name of the channel the subscription is for.
+   */
+  channelName: string;
+
+  /**
    * The URL to be invoked when an event is published to the topic.
    */
-  publishUrl: string;
+  url: string;
 
   /**
    * The underlying Hookdeck connection object.
@@ -227,26 +234,26 @@ export class HookdeckPubSub {
   /**
    * Creates a subscription to a topic with a URL to be invoked when an event is published to the topic.
    *
-   * @param {SubscriptionRequest} The subscription request.
+   * @param {SubscriptionRequest} params The subscription request.
    * @returns {Subscription} The subscription object.
    */
   public async subscribe({
-    name,
+    channelName,
     url,
     auth,
   }: SubscriptionRequest): Promise<Subscription> {
-    this._logger.debug("Subscribing: " + JSON.stringify({ name, url }));
+    this._logger.debug("Subscribing: " + JSON.stringify({ channelName, url }));
 
     const b64Url = btoa(url);
 
     const request: ConnectionUpsertRequest = {
-      name: `conn_${name}_${b64Url}`,
+      name: `conn_${channelName}_${b64Url}`,
       source: {
-        name: `${name}`,
+        name: `${channelName}`,
       },
       destination: {
         url: url,
-        name: `dst_${name}_${b64Url}`,
+        name: `dst_${channelName}_${b64Url}`,
         authMethod: auth || undefined,
       },
     };
@@ -259,8 +266,38 @@ export class HookdeckPubSub {
     const connection = await this._sdk.connection.upsert(request);
 
     return {
-      publishUrl: connection.source.url,
+      channelName: connection.source.name,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      url: connection.destination.url!,
       connection,
     };
+  }
+
+  /**
+   * Get all the subscriptions.
+   *
+   * @returns {Subscription[]} The list of subscriptions.
+   */
+  public async getSubscriptions(): Promise<Subscription[]> {
+    const connections = await this._sdk.connection.list();
+    const subscriptions: Subscription[] = [];
+
+    if (connections.models) {
+      connections.models.forEach((connection) => {
+        if (connection.destination.url === undefined) {
+          this._logger.debug(
+            `Skipping connection "${connection.destination.name}" with undefined destination URL`
+          );
+        } else {
+          subscriptions.push({
+            channelName: connection.source.name,
+            url: connection.destination.url,
+            connection,
+          });
+        }
+      });
+    }
+
+    return subscriptions;
   }
 }

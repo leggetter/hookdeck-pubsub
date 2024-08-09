@@ -73,17 +73,40 @@ describe("HookdeckPubSub class", () => {
   it("should return a Subscription object when calling subscribe()", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
     const subscription = await pubsub.subscribe({
-      name: "test-channel-calling-subscribe",
+      channelName: "test-channel-calling-subscribe",
       url: "http://localhost:3000",
     });
 
     expect(subscription, "subscription should exist").to.exist;
   });
 
+  it("should set a channelName on the Subscription object when calling subscribe()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    const CHANNEL_NAME = "test-channel-name-calling-subscribe";
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: "http://localhost:3000",
+    });
+
+    expect(subscription.channelName).to.equal(CHANNEL_NAME);
+  });
+
+  it("should set a url on the Subscription object when calling subscribe()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    const CHANNEL_NAME = "test-channel-name-calling-subscribe";
+    const URL = "http://localhost:3000";
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: URL,
+    });
+
+    expect(subscription.url).to.equal(URL);
+  });
+
   it("should not set an authentication type on the source", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
     const subscription = await pubsub.subscribe({
-      name: "test-channel-setting-auth-on-source",
+      channelName: "test-channel-setting-auth-on-source",
       url: "http://localhost:3000",
     });
 
@@ -91,6 +114,34 @@ describe("HookdeckPubSub class", () => {
       subscription.connection.source?.verification,
       "subscription.connection.source.verification should exist"
     ).to.be.undefined;
+  });
+
+  it("should get a subscription when calling getSubscriptions()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    await pubsub.subscribe({
+      channelName: "test-channel-getting-single-subscriptions",
+      url: "http://localhost:3000",
+    });
+
+    const subscriptions = await pubsub.getSubscriptions();
+
+    expect(subscriptions.length).to.be.equal(1);
+  });
+
+  it("should get two subscription when calling getSubscriptions()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    await pubsub.subscribe({
+      channelName: "test-channel-getting-multiple-subscriptions-1",
+      url: "http://localhost:3000",
+    });
+    await pubsub.subscribe({
+      channelName: "test-channel-getting-multiple-subscriptions-2",
+      url: "http://localhost:3000",
+    });
+
+    const subscriptions = await pubsub.getSubscriptions();
+
+    expect(subscriptions.length).to.be.equal(2);
   });
 
   it("should reuse existing source and authentication type", async () => {
@@ -101,7 +152,7 @@ describe("HookdeckPubSub class", () => {
     });
 
     const subscription = await pubsub.subscribe({
-      name: channel.source.name,
+      channelName: channel.source.name,
       url: "http://localhost:3000",
     });
 
@@ -119,7 +170,7 @@ describe("HookdeckPubSub class", () => {
 
     // this will create the Source with no auth
     await pubsub.subscribe({
-      name: CHANNEL_NAME,
+      channelName: CHANNEL_NAME,
       url: "http://localhost:3000",
     });
 
@@ -146,7 +197,7 @@ describe("HookdeckPubSub class", () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
 
     await pubsub.subscribe({
-      name: CHANNEL_NAME,
+      channelName: CHANNEL_NAME,
       url: "http://localhost:3000",
     });
 
@@ -163,7 +214,7 @@ describe("HookdeckPubSub class", () => {
   it("should default to using HOOKDECK_SIGNATURE as the destination auth", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY });
     const subscription = await pubsub.subscribe({
-      name: "test-channel-default-hookdeck-auth",
+      channelName: "test-channel-default-hookdeck-auth",
       url: "http://localhost:3000",
     });
 
@@ -176,7 +227,7 @@ describe("HookdeckPubSub class", () => {
   it("should support setting an authentication type on the destination", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY });
     const subscription = await pubsub.subscribe({
-      name: "test-channel-setting-auth-on-destination",
+      channelName: "test-channel-setting-auth-on-destination",
       url: "http://localhost:3000",
       auth: {
         type: "BASIC_AUTH",

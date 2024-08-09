@@ -1,7 +1,7 @@
 {
   "name": "@hookdeck/pubsub",
-  "version": "0.1.0",
-  "description": "[ALPHA] An experimental SDK providing PubSub abstractions for Hookdeck",
+  "version": "0.1.0-alpha.1",
+  "description": "An experimental SDK providing PubSub abstractions for Hookdeck",
   "keywords": [
     "typescript",
     "sdk",
@@ -17,7 +17,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hookdeck/hookdeck-node-pubsub.git"
+    "url": "https://github.com/leggetter/hookdeck-pubsub.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

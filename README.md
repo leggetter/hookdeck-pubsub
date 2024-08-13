@@ -37,6 +37,7 @@ const pubsub = new HookdeckPubSub({
 const subscription = channel.subscribe({
   channel: "orders",
 
+  // NOT IMPLEMENTED
   // optional. If supplied, used to create a filter on the connection
   eventType: "order.updated",
 
@@ -68,7 +69,6 @@ await channel.publish({
 ## Todos
 
 - [ ] Set up CI/CD
-- [ ] Publish first version to NPM
 - [ ] Add support for filters on subscriptions
 
 ## Contributing

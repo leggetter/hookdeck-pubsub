@@ -2,6 +2,7 @@ import { expect } from "chai";
 import dotenv from "dotenv";
 import { HookdeckPubSub, PublishAuth } from "../src/index";
 import { HookdeckClient } from "@hookdeck/sdk";
+import { fail } from "assert";
 dotenv.config();
 
 const API_KEY = process.env.HOOKDECK_TEST_API_KEY;
@@ -101,6 +102,25 @@ describe("HookdeckPubSub class", () => {
     });
 
     expect(subscription.url).to.equal(URL);
+  });
+
+  it("should delete the connection when calling unsubscribe()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    const CHANNEL_NAME = "test-channel-name-unsubscribe";
+    const URL = "http://localhost:3000";
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: URL,
+    });
+
+    await pubsub.unsubscribe({ id: subscription.connection.id });
+
+    try {
+      await client.connection.retrieve(subscription.connection.id);
+      fail("Expected an error to be thrown");
+    } catch (e) {
+      expect(e).to.be.an.instanceOf(Error);
+    }
   });
 
   it("should not set an authentication type on the source", async () => {

@@ -5,7 +5,7 @@ import { Logger } from "sitka";
 
 export type SubscriberAuth = Hookdeck.DestinationAuthMethodConfig;
 
-export interface SubscriptionRequest {
+export interface SubscribeRequest {
   /**
    * The name of the channe to subscribe to
    */
@@ -20,6 +20,13 @@ export interface SubscriptionRequest {
    * How requests to the {#url} are authenticated.
    */
   auth?: SubscriberAuth;
+}
+
+export interface UnsubscribeRequest {
+  /**
+   * The subscription ID to unsubscribe from.
+   */
+  id: string;
 }
 
 export type PublishAuth =
@@ -172,13 +179,12 @@ export class HookdeckPubSub {
       token: apiKey,
     });
 
+    // TODO: set a user agent header to track usage
     // this._sdk = new HookdeckClient({
     //   token: apiKey,
     //   fetcher: CustomFetcher,
     // });
   }
-
-  /* Public Instance Methods */
 
   /**
    * Gets a channel for a given topic.
@@ -242,16 +248,16 @@ export class HookdeckPubSub {
   }
 
   /**
-   * Creates a subscription to a topic with a URL to be invoked when an event is published to the topic.
+   * Creates a subscription to a channel with a URL to be invoked when an event is published to the channel.
    *
-   * @param {SubscriptionRequest} params The subscription request.
+   * @param {SubscribeRequest} params The subscription request.
    * @returns {Subscription} The subscription object.
    */
   public async subscribe({
     channelName,
     url,
     auth,
-  }: SubscriptionRequest): Promise<Subscription> {
+  }: SubscribeRequest): Promise<Subscription> {
     this._logger.debug("Subscribing: " + JSON.stringify({ channelName, url }));
 
     const b64Url = btoa(url).replace(/=/g, "_");
@@ -281,6 +287,18 @@ export class HookdeckPubSub {
       url: connection.destination.url!,
       connection,
     };
+  }
+
+  /**
+   * Removes a subscription to a channel.
+   *
+   * @param {SubscribeRequest} params The subscription request.
+   * @returns {Subscription} The subscription object.
+   */
+  public async unsubscribe({ id }: UnsubscribeRequest): Promise<void> {
+    this._logger.debug("Unsubscribing: " + JSON.stringify({ id }));
+
+    await this._sdk.connection.delete(id);
   }
 
   /**

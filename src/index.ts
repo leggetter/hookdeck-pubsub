@@ -4,6 +4,7 @@ import { Logger } from "sitka";
 // import { CustomFetcher } from "./custom-fetcher";
 
 export type SubscriberAuth = Hookdeck.DestinationAuthMethodConfig;
+export type Event = Hookdeck.Event;
 
 export interface SubscribeRequest {
   /**
@@ -63,7 +64,22 @@ export interface GetSubscriptionsRequest {
   /**
    * The subscription name to be matched
    */
-  name: string;
+  name?: string;
+
+  /**
+   * The Subscription ID, mapping to the ID of the underlying Hookdeck Connection.
+   */
+  subscriptionId?: string;
+}
+
+/**
+ * The request object for getting events.
+ */
+export interface GetEventsRequest {
+  /**
+   * The ID of the subscription mapping to the underlying Hookdeck Connection.
+   */
+  subscriptionId: string;
 }
 
 /**
@@ -74,6 +90,11 @@ export interface PublishEvent {
    * An event type identifier
    */
   type: string;
+
+  /**
+   * Optional headers to publish with the event.
+   */
+  headers?: Record<string, string>;
 
   /**
    * The event data
@@ -130,9 +151,16 @@ class _Channel implements Channel {
     this._publishAuth = publishAuth;
   }
 
+  /**
+   * Publish an event on the channel.
+   *
+   * @param {PublishEvent} event The event to be published.
+   * @returns
+   */
   publish(event: PublishEvent): Promise<Response> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      ...event.headers,
     };
     if (this._publishAuth !== undefined) {
       switch (this._publishAuth.type) {
@@ -148,13 +176,18 @@ class _Channel implements Channel {
           break;
       }
     }
+
+    const eventPayload = {
+      type: event.type,
+      data: event.data,
+    };
     const fetchOptions: RequestInit = {
       method: "POST",
       headers,
-      body: JSON.stringify(event.data),
+      body: JSON.stringify(eventPayload),
     };
     this._logger.debug("Source request: " + JSON.stringify(fetchOptions));
-    this._logger.debug("With event: " + JSON.stringify(event));
+    this._logger.debug("With event: " + JSON.stringify(eventPayload));
     const response = fetch(this.source.url, fetchOptions);
 
     return response;
@@ -310,6 +343,7 @@ export class HookdeckPubSub {
     params?: GetSubscriptionsRequest
   ): Promise<Subscription[]> {
     const connections = await this._sdk.connection.list({
+      id: params?.subscriptionId,
       fullName: params?.name,
     });
     const subscriptions: Subscription[] = [];
@@ -331,5 +365,26 @@ export class HookdeckPubSub {
     }
 
     return subscriptions;
+  }
+
+  /**
+   * Get all the events associated with a Subscription.
+   *
+   * @param {GetEventsRequest} params
+   *
+   * @returns
+   */
+  public async getEvents({
+    subscriptionId,
+  }: GetEventsRequest): Promise<Hookdeck.Event[]> {
+    let events: Hookdeck.Event[] = [];
+    const _events = await this._sdk.event.list({
+      webhookId: subscriptionId,
+    });
+    if (_events && _events.models) {
+      events = _events.models;
+    }
+
+    return events;
   }
 }

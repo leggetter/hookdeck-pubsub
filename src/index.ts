@@ -80,6 +80,28 @@ export interface GetEventsRequest {
    * The ID of the subscription mapping to the underlying Hookdeck Connection.
    */
   subscriptionId: string;
+
+  /**
+   * A flag indicating whether to include the body of the event within the response.
+   * Defaults to false.
+   */
+  includeBody?: boolean;
+}
+
+/**
+ * The request object for getting attempts.
+ */
+export interface GetDeliveryAttemptRequest {
+  /**
+   * The ID of the event that the delivery attempts are for.
+   */
+  eventId: string;
+
+  /**
+   * A flag indicating whether to include the body of the delivery attempt within the response.
+   * Defaults to false.
+   */
+  includeBody?: boolean;
 }
 
 /**
@@ -117,6 +139,11 @@ export interface Channel {
 }
 
 export interface Subscription {
+  /**
+   * A unique ID for the Subscription
+   */
+  id: string;
+
   /**
    * The name of the channel the subscription is for.
    */
@@ -315,6 +342,7 @@ export class HookdeckPubSub {
     const connection = await this._sdk.connection.upsert(request);
 
     return {
+      id: connection.id,
       channelName: connection.source.name,
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       url: connection.destination.url!,
@@ -356,6 +384,7 @@ export class HookdeckPubSub {
           );
         } else {
           subscriptions.push({
+            id: connection.id,
             channelName: connection.source.name,
             url: connection.destination.url,
             connection,
@@ -376,6 +405,7 @@ export class HookdeckPubSub {
    */
   public async getEvents({
     subscriptionId,
+    includeBody = false,
   }: GetEventsRequest): Promise<Hookdeck.Event[]> {
     let events: Hookdeck.Event[] = [];
     const _events = await this._sdk.event.list({
@@ -383,8 +413,48 @@ export class HookdeckPubSub {
     });
     if (_events && _events.models) {
       events = _events.models;
+      if (includeBody) {
+        for (let i = 0; i < events.length; ++i) {
+          if (events[i] && includeBody) {
+            // Get details with the body
+            events[i] = await this._sdk.event.retrieve(events[i].id);
+          }
+        }
+      }
     }
 
     return events;
+  }
+
+  /**
+   * Get the delivery attempts for an events.
+   *
+   * @param {GetDeliveryAttemptRequest} params
+   *
+   * @returns
+   */
+  public async getDeliveryAttempts({
+    eventId,
+    includeBody = false,
+  }: GetDeliveryAttemptRequest): Promise<Hookdeck.EventAttempt[]> {
+    const attempts: Hookdeck.EventAttempt[] = [];
+    const attemptsResult = await this._sdk.attempt.list({ eventId });
+    if (
+      attemptsResult.models !== undefined &&
+      attemptsResult.count !== undefined
+    ) {
+      for (let i = 0; i < attemptsResult.count; ++i) {
+        let attempt = attemptsResult.models[i];
+        if (attempt && includeBody) {
+          // Get details with the body
+          attempt = await this._sdk.attempt.retrieve(attempt.id);
+        }
+        if (attempt) {
+          attempts.push(attempt);
+        }
+      }
+    }
+
+    return attempts;
   }
 }

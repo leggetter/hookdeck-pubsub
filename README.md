@@ -37,10 +37,6 @@ const pubsub = new HookdeckPubSub({
 const subscription = channel.subscribe({
   channel: "orders",
 
-  // NOT IMPLEMENTED
-  // optional. If supplied, used to create a filter on the connection
-  eventType: "order.updated",
-
   // Where events published on the channel are sent
   url,
 
@@ -49,7 +45,7 @@ const subscription = channel.subscribe({
 });
 
 // Creates a Source on the fly if one does not already exist with given name
-const channel = pubsub.channe({
+const channel = pubsub.channel({
   name: "orders",
 });
 
@@ -64,6 +60,21 @@ await channel.publish({
     },
   },
 });
+
+// Get all subscriptions to the "orders" channel
+// Note: This current performs a fuzzy match
+const subscriptions = await pubsub.getSubscriptions({
+  name: "orders",
+});
+
+// Get all events sent to the subscription
+const events = await pubsub.getEvents({ subscriptionId, includeBody: true });
+
+// Get all delivery attempts for an event
+const attempts = await pubsub.getDeliveryAttempts({
+  eventId,
+  includeBody: true,
+});
 ```
 
 ## Todos
@@ -73,7 +84,7 @@ await channel.publish({
 
 ## Contributing
 
-This section is here as a reminder for you to explain to your users how to contribute to the projects you create from this template.
+Ask questions and raise issues in the [issues](/issues) section.
 
 ## Credits
 
@@ -92,6 +103,6 @@ This section is here as a reminder for you to explain to your users how to contr
 [dependencies-url]: https://www.npmjs.com/package/typescript-template?activeTab=dependencies
 [issues-image]: https://img.shields.io/github/issues/leggetter/hookdeck-pubsub.svg?style=popout
 [issues-url]: https://github.com/leggetter/hookdeck-pubsub/issues
-[package-image]: https://img.shields.io/npm/v/typescript-template
-[package-url]: https://www.npmjs.com/package/typescript-template
+[package-image]: https://img.shields.io/npm/v/@hookdeck/pubsub
+[package-url]: https://www.npmjs.com/package/@hookdeck/pubsub
 [project-url]: https://github.com/leggetter/hookdeck-pubsub

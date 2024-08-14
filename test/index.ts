@@ -1,8 +1,9 @@
 import { expect } from "chai";
 import dotenv from "dotenv";
-import { HookdeckPubSub, PublishAuth, Subscription } from "../src/index";
+import { HookdeckPubSub, PublishAuth } from "../src/index";
 import { HookdeckClient } from "@hookdeck/sdk";
 import { fail } from "assert";
+import { waitForDeliveryAttempts, waitForEvents } from "./helpers";
 dotenv.config();
 
 const API_KEY = process.env.HOOKDECK_TEST_API_KEY;
@@ -102,6 +103,18 @@ describe("HookdeckPubSub class", () => {
     });
 
     expect(subscription.url).to.equal(URL);
+  });
+
+  it("should set an id on the Subscription object when calling subscribe()", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+    const CHANNEL_NAME = "test-channel-name-calling-subscribe-assert-id";
+    const URL = "http://localhost:3000";
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: URL,
+    });
+
+    expect(subscription.id).to.not.equal(undefined);
   });
 
   it("should delete the connection when calling unsubscribe()", async () => {
@@ -327,48 +340,128 @@ describe("HookdeckPubSub class", () => {
     expect(response.ok).to.be.equal(true);
   });
 
-  it("should support retrieving events", (done) => {
+  it("should support retrieving events", async () => {
     const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
 
     const CHANNEL_NAME = "test-channel-get-events";
-    let subscription: Subscription;
 
-    pubsub
-      .subscribe({
-        channelName: CHANNEL_NAME,
-        url: "https://mock.hookdeck.com/test",
-      })
-      .then((_subscription) => {
-        subscription = _subscription;
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: "https://mock.hookdeck.com/test",
+    });
 
-        return pubsub.channel({
-          name: CHANNEL_NAME,
-        });
-      })
-      .then((channel) => {
-        return channel.publish({
-          type: "test",
-          data: { some: "event.data" },
-        });
-      })
-      .then(() => {
-        setTimeout(() => {
-          console.log("getting events");
-          pubsub
-            .getEvents({
-              subscriptionId: subscription.connection.id,
-            })
-            .then((events) => {
-              console.log("got events", events);
+    const channel = await pubsub.channel({
+      name: CHANNEL_NAME,
+    });
 
-              expect(events.length).to.be.equal(1);
-              console.log("after expect");
-              done();
-            });
-        }, 10000);
-      })
-      .catch((e) => {
-        fail(e);
-      });
+    await channel.publish({
+      type: "test",
+      data: { some: "event.data" },
+    });
+
+    const events = await waitForEvents({
+      pubsub,
+      subscriptionId: subscription.id,
+    });
+
+    expect(events.length).to.be.equal(1);
+  });
+
+  it("should support retrieving delivery attempts", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+
+    const CHANNEL_NAME = "test-channel-get-delivery-attempts";
+
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: "https://mock.hookdeck.com/test",
+    });
+
+    const channel = await pubsub.channel({
+      name: CHANNEL_NAME,
+    });
+
+    await channel.publish({
+      type: "test",
+      data: { some: "event.data" },
+    });
+
+    const events = await waitForEvents({
+      pubsub,
+      subscriptionId: subscription.id,
+    });
+
+    const attempts = await waitForDeliveryAttempts({
+      pubsub,
+      eventId: events[0].id,
+    });
+
+    expect(attempts.length).to.be.equal(1);
+  });
+
+  it("should support retrieving events with body info", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+
+    const CHANNEL_NAME = "test-channel-get-events-with-body";
+
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: "https://mock.hookdeck.com/test",
+    });
+
+    const channel = await pubsub.channel({
+      name: CHANNEL_NAME,
+    });
+
+    const publishEvent = {
+      type: "with-body-test",
+      data: { some: "event.data" },
+    };
+
+    await channel.publish(publishEvent);
+
+    const events = await waitForEvents({
+      pubsub,
+      subscriptionId: subscription.id,
+      includeBody: true,
+    });
+
+    expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (events[0].data as any).body.type as string
+    ).to.be.equal(publishEvent.type);
+  });
+
+  it("should support retrieving delivery attempts with body info", async () => {
+    const pubsub = new HookdeckPubSub({ apiKey: API_KEY, publishAuth });
+
+    const CHANNEL_NAME = "test-channel-get-delivery-attempts-with-body";
+
+    const subscription = await pubsub.subscribe({
+      channelName: CHANNEL_NAME,
+      url: "https://mock.hookdeck.com/test",
+    });
+
+    const channel = await pubsub.channel({
+      name: CHANNEL_NAME,
+    });
+
+    await channel.publish({
+      type: "delivery-with-body-test",
+      data: { some: "event.data" },
+    });
+
+    const events = await waitForEvents({
+      pubsub,
+      subscriptionId: subscription.id,
+    });
+
+    const attempts = await waitForDeliveryAttempts({
+      pubsub,
+      eventId: events[0].id,
+      includeBody: true,
+    });
+
+    expect(attempts[0].body).to.not.be.equal(undefined);
   });
 });

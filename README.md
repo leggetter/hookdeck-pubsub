@@ -51,13 +51,10 @@ const channel = pubsub.channel({
 
 // Performs a POST request to the underlying Source URL
 await channel.publish({
-  channel: "orders",
-
-  event: {
-    type: "order.updated",
-    data: {
-      status: "PAYMENT_RECEIVED",
-    },
+  type: "order.updated",
+  headers: {}
+  data: {
+    status: "PAYMENT_RECEIVED",
   },
 });
 

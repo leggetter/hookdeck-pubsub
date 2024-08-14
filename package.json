@@ -1,6 +1,6 @@
 {
   "name": "@hookdeck/pubsub",
-  "version": "0.1.4-alpha",
+  "version": "0.1.5-alpha",
   "description": "An experimental SDK providing PubSub abstractions for Hookdeck",
   "keywords": [
     "typescript",

@@ -1,3 +1,9 @@
+## 0.1.5-alpha (2024-08-14)
+
+### Breaking change
+
+- GetSubscriptionsRequest.name renamed to GetSubscriptionsRequest.channelName ([b0b0486](https://github.com/leggetter/hookdeck-pubsub/commit/d7efa977270dcf560f6659e9f3906a224e414fdd))
+
 ## 0.1.4-alpha (2024-08-14)
 
 ### Features

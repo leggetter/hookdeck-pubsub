@@ -205,7 +205,7 @@ describe("HookdeckPubSub class", () => {
     });
 
     const subscriptions = await pubsub.getSubscriptions({
-      name: "test-channel-getting-subscriptions-partial-match",
+      channelName: "test-channel-getting-subscriptions-partial-match",
     });
 
     expect(subscriptions.length).to.be.equal(2);

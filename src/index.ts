@@ -62,9 +62,10 @@ export interface GetChannelRequest {
  */
 export interface GetSubscriptionsRequest {
   /**
-   * The subscription name to be matched
+   * The channel name to retrieve the subscriptions for.
+   * Note: this is currently a fuzzy match.
    */
-  name?: string;
+  channelName?: string;
 
   /**
    * The Subscription ID, mapping to the ID of the underlying Hookdeck Connection.
@@ -372,7 +373,7 @@ export class HookdeckPubSub {
   ): Promise<Subscription[]> {
     const connections = await this._sdk.connection.list({
       id: params?.subscriptionId,
-      fullName: params?.name,
+      fullName: params?.channelName,
     });
     const subscriptions: Subscription[] = [];
 

@@ -1,3 +1,8 @@
+## 0.1.6-alpha (2024-08-16)
+
+### Features
+
+* swap sitka for pino for logging. Support typed and untyped event publishing ([f7e5a5c](https://github.com/leggetter/hookdeck-pubsub/commit/f7e5a5ca7cc5ed2a360d89667e40a92deb325821))
 
 ## 0.1.5-alpha (2024-08-14)
 

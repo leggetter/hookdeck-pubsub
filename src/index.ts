@@ -1,6 +1,6 @@
 import { Hookdeck, HookdeckClient } from "@hookdeck/sdk";
 import { ConnectionUpsertRequest } from "@hookdeck/sdk/api";
-import { Logger } from "sitka";
+import pino from "pino";
 // import { CustomFetcher } from "./custom-fetcher";
 
 export type SubscriberAuth = Hookdeck.DestinationAuthMethodConfig;
@@ -45,6 +45,11 @@ export interface HookdeckPubSubOptions {
    * The authentication to be used with sources when publishing events.
    */
   publishAuth?: PublishAuth;
+
+  /**
+   *
+   */
+  logLevel?: pino.Level;
 }
 
 /**
@@ -106,9 +111,9 @@ export interface GetDeliveryAttemptRequest {
 }
 
 /**
- * An event to be published on a {Channel}
+ * A typed event with a {#type} property, {#headers}, and a {#data} event payload to be published on a {Channel}
  */
-export interface PublishEvent {
+export interface PublishTypedEvent {
   /**
    * An event type identifier
    */
@@ -125,6 +130,21 @@ export interface PublishEvent {
   data: unknown;
 }
 
+/**
+ * A generic event with headers and a body payload to be published on a {Channel}
+ */
+export interface PublishEvent {
+  /**
+   * Optional headers to publish with the event.
+   */
+  headers?: Record<string, string>;
+
+  /**
+   * The event data
+   */
+  body: unknown;
+}
+
 export interface Channel {
   /**
    * The underlying Hookdeck source object.
@@ -134,9 +154,9 @@ export interface Channel {
   /**
    * Publish an event to the channel.
    *
-   * @param event {PublishEvent} The event to be published.
+   * @param {PublishEvent | PublishTypedEvent} event The event to be published.
    */
-  publish(event: PublishEvent): Promise<Response>;
+  publish(event: PublishEvent | PublishTypedEvent): Promise<Response>;
 }
 
 export interface Subscription {
@@ -162,30 +182,29 @@ export interface Subscription {
 }
 
 class _Channel implements Channel {
-  private _logger: Logger;
+  private _logger: pino.Logger;
   public source: Hookdeck.Source;
   private _publishAuth?: PublishAuth | undefined;
 
   constructor({
     source,
     publishAuth,
+    logger,
   }: {
     source: Hookdeck.Source;
     publishAuth: PublishAuth;
+    logger: pino.Logger;
   }) {
-    this._logger = Logger.getLogger({ name: this.constructor.name });
+    this._logger = logger;
 
     this.source = source;
     this._publishAuth = publishAuth;
   }
 
   /**
-   * Publish an event on the channel.
-   *
-   * @param {PublishEvent} event The event to be published.
-   * @returns
+   * @see Channel.publish
    */
-  publish(event: PublishEvent): Promise<Response> {
+  async publish(event: PublishEvent | PublishTypedEvent): Promise<Response> {
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...event.headers,
@@ -205,10 +224,18 @@ class _Channel implements Channel {
       }
     }
 
-    const eventPayload = {
-      type: event.type,
-      data: event.data,
-    };
+    let eventPayload = null;
+    if ("type" in event && "data" in event) {
+      // PublishTypedEvent
+      eventPayload = {
+        type: event.type,
+        data: event.data,
+      };
+    } else {
+      // PublishEvent
+      eventPayload = event.body;
+    }
+
     const fetchOptions: RequestInit = {
       method: "POST",
       headers,
@@ -216,14 +243,14 @@ class _Channel implements Channel {
     };
     this._logger.debug("Source request: " + JSON.stringify(fetchOptions));
     this._logger.debug("With event: " + JSON.stringify(eventPayload));
-    const response = fetch(this.source.url, fetchOptions);
+    const response = await fetch(this.source.url, fetchOptions);
 
     return response;
   }
 }
 
 export class HookdeckPubSub {
-  private _logger: Logger;
+  private _logger: pino.Logger;
   private _sdk: HookdeckClient;
   private _publishAuth?: PublishAuth;
 
@@ -232,8 +259,15 @@ export class HookdeckPubSub {
    *
    * @param {HookdeckPubSubOptions} constructor options.
    */
-  constructor({ apiKey, publishAuth }: HookdeckPubSubOptions) {
-    this._logger = Logger.getLogger({ name: this.constructor.name });
+  constructor({
+    apiKey,
+    publishAuth,
+    logLevel = "info",
+  }: HookdeckPubSubOptions) {
+    this._logger = pino({
+      name: this.constructor.name,
+      level: logLevel,
+    });
     this._publishAuth = publishAuth;
 
     this._sdk = new HookdeckClient({
@@ -305,7 +339,11 @@ export class HookdeckPubSub {
       }
     }
 
-    return new _Channel({ source, publishAuth: this._publishAuth });
+    return new _Channel({
+      source,
+      publishAuth: this._publishAuth,
+      logger: this._logger,
+    });
   }
 
   /**
